@@ -1,39 +1,25 @@
 import time
-import threading
-
 import threadcrew
+import sleepandprintjob as job
 
 
-# part A: implement threadpool to support the following code
-def sleepAndPrint(timeToSleep, whatToPrint):
-    time.sleep(timeToSleep)
-    print(f"{threading.get_ident()}: {whatToPrint}")
+class User:
+    def __init__(self):
+        self._pool = threadcrew.ThreadCrew(threads=10)
+        started = time.time()
+        for loop in range(3):
+            for _ in range(10):
+                self._pool.add(job.SleepAndPrint(1, "a_"+str(loop), self.callback))
+                self._pool.add(job.SleepAndPrint(2, "b_"+str(loop), lambda: print("callback lambda")))
+                self._pool.add(job.SleepAndPrint(1.5, "c_"+str(loop), lambda: None))
+
+    def callback(self):
+        print("callback from main thread")
+
+    def exit(self):
+        self._pool.exit(wait_until_queue_empty=True)
 
 
-threadPool = threadcrew.ThreadCrew(threads = 10)
-for _ in range(3):
-    for _ in range(10):
-        threadPool.add(sleepAndPrint, {"timeToSleep": 2, "whatToPrint": "a" })
-    for _ in range(10):
-        threadPool.add(sleepAndPrint, {"timeToSleep": 1, "whatToPrint": "b" })
-    for _ in range(10):
-        threadPool.add(sleepAndPrint, {"timeToSleep": 1.5, "whatToPrint": "c" })
-
-threadPool.waitForFinish()
-print("Done... :)")
-
-
-
-# part B: edit the threadpool to support classes and not functions
-###
-# class SleepAndPrint:
-#     def __init__(self, timeToSleep, whatToPrint):
-#         self._timeToSleep = timeToSleep
-#         self._whatToPrint = whatToPrint
-#
-#     def __call__(self):
-#         time.sleep(self._timeToSleep)
-#         print(f"{threading.get_ident()}: {self._whatToPrint}")
-#
-# threadPool.add(SleepAndPrint(2,"a"))
-###
+u = User()
+time.sleep(3)
+u.exit()
